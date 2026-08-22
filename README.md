@@ -1,6 +1,6 @@
-# Antigravity 2.0 Fedora Installer
+# Antigravity 2 Fedora Installer
 
-Native installation and packaging utility for running **Antigravity 2.0 Agent** and **Antigravity 2.0 IDE** on Fedora Workstation.
+Native installation and packaging utility for running **Antigravity 2 Agent** and **Antigravity 2 IDE** on Fedora Workstation.
 
 This project supports installation via direct scripts (`install.sh`) or native Fedora RPM packages built locally. Release versions and download URLs are dynamically and authoritatively derived directly from the official Google release page ([antigravity.google/download](https://antigravity.google/download)), ensuring installations and builds always retrieve the most up-to-date upstream binaries.
 
@@ -25,8 +25,8 @@ Clone the repository and run the script:
 ```
 
 Unless `--mode` is specified, the installer runs interactively and prompts you to select the target variant:
-1. **Antigravity 2.0 IDE** (Development Environment)
-2. **Antigravity 2.0 Agent** (Background Agent / Hub)
+1. **Antigravity 2 IDE** (Development Environment)
+2. **Antigravity 2 Agent** (Background Agent / Hub)
 
 ### Command-Line Arguments
 | Option | Argument | Description |
@@ -62,7 +62,7 @@ You can build and install native RPM packages for Fedora using the provided spec
 ### 1. Install Build Prerequisites
 Install the required packaging tools and dependencies (no compilers are required since the RPMs repackage precompiled upstream binaries):
 ```bash
-sudo dnf install -y spectool rpkg tar gzip
+sudo dnf install -y python3 spectool rpkg tar gzip
 ```
 
 ### 2. Build the RPMs
@@ -80,11 +80,17 @@ The output RPM files will be generated in `~/rpkg/` (or the folder defined by `$
 ### 3. Install the RPMs
 Install the compiled RPMs via `dnf`:
 ```bash
-# Install the Antigravity Agent
-sudo dnf install ~/rpkg/$(uname -m)/antigravity2-*.rpm
+# Install the built Antigravity Agent RPM (specify the version yourself)
+sudo dnf install ~/rpkg/$(uname -m)/antigravity2-<VERSION>.rpm
 
-# Install the Antigravity IDE
-sudo dnf install ~/rpkg/$(uname -m)/antigravity2-ide-*.rpm
+# Or install the latest built Antigravity Agent RPM automatically:
+sudo dnf install $(ls -v ~/rpkg/$(uname -m)/antigravity2-[0-9]*.rpm | tail -n 1)
+
+# Install the built Antigravity IDE RPM (specify the version yourself)
+sudo dnf install ~/rpkg/$(uname -m)/antigravity2-ide-<VERSION>.rpm
+
+# Or install the latest built Antigravity IDE RPM automatically:
+sudo dnf install $(ls -v ~/rpkg/$(uname -m)/antigravity2-ide-[0-9]*.rpm | tail -n 1)
 ```
 
 ---
@@ -95,8 +101,8 @@ The CLI command name depends on your chosen installation method:
 
 | Application | Installed via Script (`install.sh`) | Installed via RPM |
 | :--- | :--- | :--- |
-| **Antigravity 2.0 Agent** | `antigravity` | `antigravity2` |
-| **Antigravity 2.0 IDE** | `antigravity-ide` | `antigravity2-ide` |
+| **Antigravity 2 Agent** | `antigravity` | `antigravity2` |
+| **Antigravity 2 IDE** | `antigravity-ide` | `antigravity2-ide` |
 
 ### Wayland & Performance Optimizations
 The generated desktop entries run Chromium/Electron using native Wayland flags for accelerated hardware rendering:
@@ -107,7 +113,7 @@ The generated desktop entries run Chromium/Electron using native Wayland flags f
 ## 🧹 Coexistence & Uninstallation
 
 ### Dual-Version Coexistence
-If legacy Antigravity 1.x is present on the system, the installer handles compatibility by renaming legacy launcher files to `*-legacy.desktop` (e.g. `antigravity-legacy.desktop`), allowing v1.x and v2.0 to run side-by-side.
+If legacy Antigravity 1.x is present on the system, the installer handles compatibility by renaming legacy launcher files to `*-legacy.desktop` (e.g. `antigravity-legacy.desktop`), allowing v1.x and v2 to run side-by-side.
 
 ### Uninstallation
 
