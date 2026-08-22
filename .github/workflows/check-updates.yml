@@ -1,0 +1,45 @@
+name: Check Upstream Releases
+
+on:
+  schedule:
+    # Run every 6 hours (at 00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allows manual one-click trigger from the GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run verification test suite
+        run: |
+          python3 tests/test_detection.py
+
+      - name: Check and update specs from upstream
+        run: |
+          python3 get-latest-versions.py --update-specs
+
+      - name: Commit and push updates if new version released
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "New upstream version detected. Committing changes..."
+            git add antigravity2.spec antigravity2-ide.spec install.sh
+            git commit -m "chore(release): auto-update upstream releases"
+            git push origin main
+          else
+            echo "No upstream version changes detected. Repository is up to date."
+          fi
