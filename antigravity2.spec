@@ -9,7 +9,7 @@
 
 
 Name:           antigravity2
-Version:        2.16.0
+Version:        2.17.0
 Release:        1%{?dist}
 Summary:        Antigravity 2.0 Agent
 
@@ -17,8 +17,8 @@ License:        Proprietary (Google Terms of Service)
 URL:            https://storage.googleapis.com/antigravity-public/antigravity-hub/index.html
 ExclusiveArch:  x86_64 aarch64
 
-Source0:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.16.0-4917332007583744/linux-x64/Antigravity.tar.gz#/Antigravity-x64.tar.gz
-Source1:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.16.0-4917332007583744/linux-arm/Antigravity.tar.gz#/Antigravity-arm64.tar.gz
+Source0:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.17.0-5217732355031040/linux-x64/Antigravity.tar.gz#/Antigravity-x64.tar.gz
+Source1:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.17.0-5217732355031040/linux-arm/Antigravity.tar.gz#/Antigravity-arm64.tar.gz
 Source2:        antigravity2.desktop
 Source3:        antigravity.png
 
