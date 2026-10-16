@@ -1,8 +1,8 @@
-# Antigravity 2.0 Fedora Installer
+# Antigravity 2 Fedora Installer
 
-Native installation and packaging utility for running **Antigravity 2.0** and **Antigravity IDE** on Fedora Workstation.
+Native installation and packaging utility for running **Antigravity 2** and **Antigravity 2 IDE** on Fedora Workstation.
 
-This project supports installation via direct scripts (`install.sh`) or native Fedora RPM packages built locally.
+This project supports installation via direct scripts (`install.sh`) or native Fedora RPM packages built locally. Release versions and download URLs are dynamically and authoritatively derived directly from the official Google auto-updater endpoint (`https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/releases`) and the official release page ([antigravity.google/download](https://antigravity.google/download)), ensuring installations and builds always retrieve the most up-to-date upstream binaries.
 
 ---
 
@@ -15,7 +15,7 @@ The easiest way to install Antigravity is by running the installer directly or u
 **One-liner (No clone required):**
 Run the installer directly from the repository (supports interactive prompts and options):
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/jssroberto/antigravity-2-fedora-installer/main/install.sh) [options]
+bash <(curl -fsSL https://raw.githubusercontent.com/pjjjv/antigravity-2-fedora-installer/main/install.sh) [options]
 ```
 
 **Local script:**
@@ -25,8 +25,8 @@ Clone the repository and run the script:
 ```
 
 Unless `--mode` is specified, the installer runs interactively and prompts you to select the target variant:
-1. **Antigravity IDE**
-2. **Antigravity 2.0** (Desktop App)
+1. **Antigravity 2 IDE**
+2. **Antigravity 2** (Desktop App)
 
 ### Command-Line Arguments
 | Option | Argument | Description |
@@ -34,6 +34,7 @@ Unless `--mode` is specified, the installer runs interactively and prompts you t
 | `--mode` | `ide` \| `app` | Choose the target variant to install (bypasses interactive menu). |
 | `--user` | *None* | Install to user space (`~/.local`) without requiring root/sudo. |
 | `--url` | `<url>` | Override the default download URL. |
+| `--no-check` | *None* | Skip online release detection and use bundled versions. |
 | `--dry-run` | *None* | Perform validation checks and download the package without writing files. |
 | `-y, --yes` | *None* | Automatically accept prompts during updates or reinstallations. |
 | `-h, --help` | *None* | Display usage guide and exit. |
@@ -61,16 +62,16 @@ You can build and install native RPM packages for Fedora using the provided spec
 ### 1. Install Build Prerequisites
 Install the required packaging tools and dependencies (no compilers are required since the RPMs repackage precompiled upstream binaries):
 ```bash
-sudo dnf install -y spectool rpkg tar gzip
+sudo dnf install -y python3 spectool rpkg tar gzip
 ```
 
 ### 2. Build the RPMs
 Run the corresponding build script to download the upstream archives and package them locally:
-*   **Build Antigravity 2.0 RPM (`antigravity2`)**:
+*   **Build Antigravity 2 RPM (`antigravity2`)**:
     ```bash
     ./build.sh
     ```
-*   **Build Antigravity IDE RPM (`antigravity2-ide`)**:
+*   **Build Antigravity 2 IDE RPM (`antigravity2-ide`)**:
     ```bash
     ./build-ide.sh
     ```
@@ -79,11 +80,17 @@ The output RPM files will be generated in `~/rpkg/` (or the folder defined by `$
 ### 3. Install the RPMs
 Install the compiled RPMs via `dnf`:
 ```bash
-# Install Antigravity 2.0
-sudo dnf install ~/rpkg/$(uname -m)/antigravity2-2.11.0-*.rpm
+# Install the built Antigravity 2 RPM (specify the version yourself)
+sudo dnf install ~/rpkg/$(uname -m)/antigravity2-<VERSION>.rpm
 
-# Install Antigravity IDE
-sudo dnf install ~/rpkg/$(uname -m)/antigravity2-ide-2.5.5-*.rpm
+# Or install the latest built Antigravity 2 RPM automatically:
+sudo dnf install $(ls -v ~/rpkg/$(uname -m)/antigravity2-[0-9]*.rpm | tail -n 1)
+
+# Install the built Antigravity 2 IDE RPM (specify the version yourself)
+sudo dnf install ~/rpkg/$(uname -m)/antigravity2-ide-<VERSION>.rpm
+
+# Or install the latest built Antigravity 2 IDE RPM automatically:
+sudo dnf install $(ls -v ~/rpkg/$(uname -m)/antigravity2-ide-[0-9]*.rpm | tail -n 1)
 ```
 
 ---
@@ -94,8 +101,8 @@ The CLI command name depends on your chosen installation method:
 
 | Application | Installed via Script (`install.sh`) | Installed via RPM |
 | :--- | :--- | :--- |
-| **Antigravity 2.0** | `antigravity` | `antigravity2` |
-| **Antigravity IDE** | `antigravity-ide` | `antigravity2-ide` |
+| **Antigravity 2** | `antigravity` | `antigravity2` |
+| **Antigravity 2 IDE** | `antigravity-ide` | `antigravity2-ide` |
 
 ### Wayland & Performance Optimizations
 The generated desktop entries run Chromium/Electron using native Wayland flags for accelerated hardware rendering:
@@ -106,7 +113,7 @@ The generated desktop entries run Chromium/Electron using native Wayland flags f
 ## 🧹 Coexistence & Uninstallation
 
 ### Dual-Version Coexistence
-If legacy Antigravity 1.x is present on the system, the installer handles compatibility by renaming legacy launcher files to `*-legacy.desktop` (e.g. `antigravity-legacy.desktop`), allowing v1.x and v2.0 to run side-by-side.
+If legacy Antigravity 1.x is present on the system, the installer handles compatibility by renaming legacy launcher files to `*-legacy.desktop` (e.g. `antigravity-legacy.desktop`), allowing v1.x and v2 to run side-by-side.
 
 ### Uninstallation
 
@@ -115,7 +122,7 @@ Use the [uninstall.sh](uninstall.sh) utility to cleanly remove all files, direct
 ```bash
 ./uninstall.sh [options]
 ```
-*   **CLI Options**: `--ide` (IDE only), `--app` (Antigravity 2.0 only), `--both` (complete cleanup), or `--user` (limit scope to user space).
+*   **CLI Options**: `--ide` (IDE only), `--app` (Antigravity 2 only), `--both` (complete cleanup), or `--user` (limit scope to user space).
 *   **Interactive Menu**: Run `./uninstall.sh` without options to choose via terminal prompt.
 
 #### RPM-Based Uninstallation

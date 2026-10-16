@@ -3,15 +3,15 @@
 %undefine __brp_check_rpaths
 
 # Exclude private shared libraries from being registered as provides or requirements
-%global __provides_exclude_from ^/opt/antigravity2-ide-Linux/.*\\.so.*$
-%global __requires_exclude_from ^/opt/antigravity2-ide-Linux/.*\\.so.*$
-%global __requires_exclude ^(libffmpeg\\.so|libmsalruntime\\.so|/usr/bin/node|/usr/bin/perl|/usr/bin/python3)
+%global __provides_exclude_from ^/opt/antigravity2-ide-Linux/.*\.so.*$
+%global __requires_exclude_from ^/opt/antigravity2-ide-Linux/.*\.so.*$
+%global __requires_exclude ^(libffmpeg\.so|libmsalruntime\.so|/usr/bin/node|/usr/bin/perl|/usr/bin/python3)
 
 
 Name:           antigravity2-ide
 Version:        2.5.5
 Release:        1%{?dist}
-Summary:        Antigravity IDE
+Summary:        Antigravity 2 IDE
 
 License:        Proprietary (Google Terms of Service)
 URL:            https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/index.html
@@ -26,7 +26,7 @@ BuildRequires:  tar
 BuildRequires:  gzip
 
 %description
-Antigravity IDE standalone development environment repackaged for Fedora.
+Antigravity 2 IDE standalone development environment repackaged for Fedora.
 Experience liftoff (IDE).
 
 %prep
@@ -82,6 +82,9 @@ install -m 644 %{SOURCE3} %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/%{n
 %{_datadir}/icons/hicolor/512x512/apps/%{name}.png
 
 %changelog
+* Sun Oct 16 2026 pjv <ezelspinguin@gmail.com> - 2.5.5-1
+- Update to Antigravity 2 IDE v2.5.5
+
 * Fri Aug 14 2026 pjv <ezelspinguin@gmail.com> - 2.5.5-1
 - Update to version 2.5.5 with new download URLs
 

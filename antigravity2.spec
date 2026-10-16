@@ -3,22 +3,22 @@
 %undefine __brp_check_rpaths
 
 # Exclude private shared libraries from being registered as provides or requirements
-%global __provides_exclude_from ^/opt/antigravity2-Linux/.*\\.so.*$
-%global __requires_exclude_from ^/opt/antigravity2-Linux/.*\\.so.*$
-%global __requires_exclude ^(libffmpeg\\.so|/usr/bin/node)
+%global __provides_exclude_from ^/opt/antigravity2-Linux/.*\.so.*$
+%global __requires_exclude_from ^/opt/antigravity2-Linux/.*\.so.*$
+%global __requires_exclude ^(libffmpeg\.so|/usr/bin/node)
 
 
 Name:           antigravity2
-Version:        2.23.1
+Version:        2.24.0
 Release:        1%{?dist}
-Summary:        Antigravity 2.0 Desktop Application
+Summary:        Antigravity 2 Desktop Application
 
 License:        Proprietary (Google Terms of Service)
 URL:            https://storage.googleapis.com/antigravity-public/antigravity-hub/index.html
 ExclusiveArch:  x86_64 aarch64
 
-Source0:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.23.1-6348059836284928/linux-x64/Antigravity.tar.gz#/Antigravity-x64.tar.gz
-Source1:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.23.1-6348059836284928/linux-arm/Antigravity.tar.gz#/Antigravity-arm64.tar.gz
+Source0:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.24.0-5780333019398144/linux-x64/Antigravity.tar.gz#/Antigravity-x64.tar.gz
+Source1:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.24.0-5780333019398144/linux-arm/Antigravity.tar.gz#/Antigravity-arm64.tar.gz
 Source2:        antigravity2.desktop
 Source3:        antigravity.png
 
@@ -26,7 +26,7 @@ BuildRequires:  tar
 BuildRequires:  gzip
 
 %description
-Antigravity 2.0 desktop application repackaged for Fedora.
+Antigravity 2 desktop application repackaged for Fedora.
 Experience liftoff.
 
 %prep
@@ -83,6 +83,9 @@ install -m 644 %{SOURCE3} %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/%{n
 %{_datadir}/icons/hicolor/512x512/apps/%{name}.png
 
 %changelog
+* Sun Oct 16 2026 pjv <ezelspinguin@gmail.com> - 2.24.0-1
+- Update to Antigravity 2 v2.24.0
+
 * Sat Aug 22 2026 pjv <ezelspinguin@gmail.com> - 2.9.1-1
 - Update to version 2.9.1 with new GCS download URLs
 

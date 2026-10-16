@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Antigravity 2.0 Fedora Installer
+# Antigravity 2 Fedora Installer
 # A secure, robust, and native installation script for Fedora.
 #
 # Usage:
@@ -28,13 +28,13 @@ INSTALL_SCOPE="system"
 APP_MODE="" # Starts empty to force interaction if not provided
 
 VERSION_IDE="2.5.5"
-VERSION_APP="2.23.1"
+VERSION_APP="2.24.0"
 APP_VERSION=""
 
 DOWNLOAD_URL_IDE_X64="https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/2.5.5-4923483625488384/linux-x64/Antigravity%20IDE.tar.gz"
 DOWNLOAD_URL_IDE_ARM64="https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/2.5.5-4923483625488384/linux-arm/Antigravity%20IDE.tar.gz"
-DOWNLOAD_URL_APP_X64="https://storage.googleapis.com/antigravity-public/antigravity-hub/2.23.1-6348059836284928/linux-x64/Antigravity.tar.gz"
-DOWNLOAD_URL_APP_ARM64="https://storage.googleapis.com/antigravity-public/antigravity-hub/2.23.1-6348059836284928/linux-arm/Antigravity.tar.gz"
+DOWNLOAD_URL_APP_X64="https://storage.googleapis.com/antigravity-public/antigravity-hub/2.24.0-5780333019398144/linux-x64/Antigravity.tar.gz"
+DOWNLOAD_URL_APP_ARM64="https://storage.googleapis.com/antigravity-public/antigravity-hub/2.24.0-5780333019398144/linux-arm/Antigravity.tar.gz"
 DOWNLOAD_URL_IDE=""
 DOWNLOAD_URL_APP=""
 
@@ -57,7 +57,6 @@ escalate_cmd() {
     fi
 }
 
-# Options:
 NO_CHECK=false
 
 # Print usage instructions
@@ -129,7 +128,7 @@ while [[ $# -gt 0 ]]; do
         esac
 done
 
-echo -e "${BLUE}${BOLD}=== Antigravity Installer ===${NC}"
+echo -e "${BLUE}${BOLD}=== Antigravity 2 Installer ===${NC}"
 
 # --- INTERACTIVE MENU ---
 if [[ -z "$APP_MODE" ]]; then
@@ -138,8 +137,8 @@ if [[ -z "$APP_MODE" ]]; then
         exit 1
     fi
     echo -e "\n${BOLD}Select the application you want to install:${NC}"
-    echo -e "  ${GREEN}1)${NC} ${BOLD}Antigravity IDE${NC}"
-    echo -e "  ${GREEN}2)${NC} ${BOLD}Antigravity 2.0${NC} (Desktop App)"
+    echo -e "  ${GREEN}1)${NC} ${BOLD}Antigravity 2 IDE${NC}"
+    echo -e "  ${GREEN}2)${NC} ${BOLD}Antigravity 2${NC} (Desktop App)"
     echo -ne "\nEnter an option [1-2]: "
 
     read -r OPTION
@@ -198,14 +197,14 @@ fetch_latest_version() {
                 fi
                 echo -e "${GREEN}✓ Authoritative release check successful: Latest available is v${APP_VERSION} (Build ${DETECTED_IDE_BUILD})${NC}"
                 return 0
-            elif [[ "$mode" == "agent" && -n "${DETECTED_AGENT_VERSION:-}" ]]; then
-                APP_VERSION="$DETECTED_AGENT_VERSION"
+            elif [[ ( "$mode" == "app" || "$mode" == "agent" ) && -n "${DETECTED_APP_VERSION:-${DETECTED_AGENT_VERSION:-}}" ]]; then
+                APP_VERSION="${DETECTED_APP_VERSION:-$DETECTED_AGENT_VERSION}"
                 if [[ "$arch" == "aarch64" ]]; then
-                    DOWNLOAD_URL="$DETECTED_AGENT_URL_ARM64"
+                    DOWNLOAD_URL="${DETECTED_APP_URL_ARM64:-$DETECTED_AGENT_URL_ARM64}"
                 else
-                    DOWNLOAD_URL="$DETECTED_AGENT_URL_X64"
+                    DOWNLOAD_URL="${DETECTED_APP_URL_X64:-$DETECTED_AGENT_URL_X64}"
                 fi
-                echo -e "${GREEN}✓ Authoritative release check successful: Latest available is v${APP_VERSION} (Build ${DETECTED_AGENT_BUILD})${NC}"
+                echo -e "${GREEN}✓ Authoritative release check successful: Latest available is v${APP_VERSION} (Build ${DETECTED_APP_BUILD:-$DETECTED_AGENT_BUILD})${NC}"
                 return 0
             fi
         fi
@@ -252,7 +251,7 @@ fetch_latest_version() {
 # Define dynamic variables based on selected mode
 if [[ "$APP_MODE" == "ide" ]]; then
     APP_NAME_SHORT="antigravity-ide"
-    APP_NAME_PRETTY="Antigravity IDE"
+    APP_NAME_PRETTY="Antigravity 2 IDE"
     APP_COMMENT="Experience liftoff (IDE)"
     APP_WMCLASS="antigravity-ide"
     BINARY_NAME="antigravity-ide"
@@ -260,7 +259,7 @@ if [[ "$APP_MODE" == "ide" ]]; then
     [[ -z "$DOWNLOAD_URL" ]] && DOWNLOAD_URL="$DOWNLOAD_URL_IDE"
 else
     APP_NAME_SHORT="antigravity"
-    APP_NAME_PRETTY="Antigravity 2.0"
+    APP_NAME_PRETTY="Antigravity 2"
     APP_COMMENT="Experience liftoff"
     APP_WMCLASS="Antigravity"
     BINARY_NAME="antigravity"
@@ -269,7 +268,7 @@ else
 fi
 
 # Automatically check online for the latest version if no custom URL was provided and online check is enabled
-if [[ "$NO_CHECK" == "false" && ( -z "${DOWNLOAD_URL:-}" || "$DOWNLOAD_URL" == "$DOWNLOAD_URL_IDE" || "$DOWNLOAD_URL" == "$DOWNLOAD_URL_AGENT" ) ]]; then
+if [[ "$NO_CHECK" == "false" && ( -z "${DOWNLOAD_URL:-}" || "$DOWNLOAD_URL" == "$DOWNLOAD_URL_IDE" || "$DOWNLOAD_URL" == "$DOWNLOAD_URL_APP" || "$DOWNLOAD_URL" == "$DOWNLOAD_URL_AGENT" ) ]]; then
     fetch_latest_version "$APP_MODE" "$ARCH" || true
 fi
 
@@ -401,7 +400,7 @@ if [[ -f "$LOCAL_ICON" ]]; then
     echo -e "${GREEN}✓ Found local icon file.${NC}"
     cp "$LOCAL_ICON" "$TEMP_DIR/antigravity.png"
 else
-    ICON_URL="https://raw.githubusercontent.com/jssroberto/antigravity-2-fedora-installer/main/antigravity.png"
+    ICON_URL="https://raw.githubusercontent.com/pjjjv/antigravity-2-fedora-installer/main/antigravity.png"
     if [[ "$DRY_RUN" == "true" ]]; then
         echo -e "${BLUE}[DRY RUN] Would download icon from: $ICON_URL${NC}"
     else
@@ -421,8 +420,6 @@ if [[ "$DRY_RUN" == "true" ]]; then
     echo -e "${GREEN}✓ Dry-run completed successfully. The environment and download were verified.${NC}"
     exit 0
 fi
-
-
 
 echo -e "${YELLOW}Extracting and installing binaries...${NC}"
 
@@ -631,7 +628,6 @@ if [[ "$INSTALL_SCOPE" == "user" ]]; then
         echo -e "\n${YELLOW}${BOLD}⚠️  Shell Configuration Notice:${NC}"
         echo -e "  The local bin directory (${BOLD}${BIN_DIR}${NC}) is not in your system ${BOLD}PATH${NC} variable."
         echo -e "  To launch the application using the '${BOLD}${APP_NAME_SHORT}${NC}' command, add it by running:"
-        echo -e "  ${BLUE}echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ${CONFIG_FILE} && source ${CONFIG_FILE}${NC}"
+        echo -e "  ${BLUE}echo 'export PATH="\$HOME/.local/bin:\$PATH"' >> ${CONFIG_FILE} && source ${CONFIG_FILE}${NC}"
     fi
 fi
-

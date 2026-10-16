@@ -3,10 +3,11 @@
 Test suite for dynamic release detection and installer integrity.
 Tests:
 1. Online authoritative fetching and parsing from https://antigravity.google/download.
-2. Fallback heuristic parsing under altered HTML markup.
-3. Offline graceful fallback to bundled defaults.
-4. Live verification of tarball HTTP status and header integrity.
-5. Verification of spec files and installer syntax consistency.
+2. Fallback heuristic parsing under altered HTML markup (both modern and legacy naming).
+3. Modern HTML parsing for Antigravity App and Antigravity IDE (Standalone).
+4. Offline graceful fallback to bundled defaults on empty or corrupt HTML.
+5. Live verification of tarball HTTP status and header integrity.
+6. Backward compatibility between 'app' and legacy 'agent' identifiers.
 """
 
 import sys
@@ -26,13 +27,14 @@ spec.loader.exec_module(detector)
 class TestReleaseDetection(unittest.TestCase):
 
     def test_live_online_detection(self):
-        """Test detection against live https://antigravity.google/download."""
+        """Test detection against live authoritative sources."""
         releases, source = detector.get_latest_releases(verify_live=True)
         self.assertEqual(source, "online")
+        self.assertIn("app", releases)
         self.assertIn("agent", releases)
         self.assertIn("ide", releases)
 
-        for comp in ("agent", "ide"):
+        for comp in ("app", "agent", "ide"):
             data = releases[comp]
             self.assertRegex(data["version"], r"^[0-9]+\.[0-9]+\.[0-9]+$", f"{comp} version format invalid")
             self.assertIn("x86_64", data["urls"], f"{comp} missing x86_64 URL")
@@ -41,7 +43,7 @@ class TestReleaseDetection(unittest.TestCase):
             self.assertTrue(data["urls"]["aarch64"].startswith("https://"))
 
     def test_heuristic_parsing_with_altered_html(self):
-        """Test that heuristic layer parses unexpected HTML structures and custom CDNs."""
+        """Test that heuristic layer parses unexpected HTML structures and custom CDNs (legacy naming)."""
         mock_html = """
         <html>
           <body>
@@ -57,9 +59,35 @@ class TestReleaseDetection(unittest.TestCase):
         parsed = detector.parse_releases_from_html(mock_html)
         self.assertIsNotNone(parsed)
         self.assertEqual(parsed["agent"]["version"], "3.0.0")
+        self.assertEqual(parsed["app"]["version"], "3.0.0")
         self.assertEqual(parsed["ide"]["version"], "3.1.0")
+        self.assertIn("x86_64", parsed["app"]["urls"])
+        self.assertIn("aarch64", parsed["app"]["urls"])
         self.assertIn("x86_64", parsed["agent"]["urls"])
         self.assertIn("aarch64", parsed["agent"]["urls"])
+        self.assertIn("x86_64", parsed["ide"]["urls"])
+        self.assertIn("aarch64", parsed["ide"]["urls"])
+
+    def test_modern_html_parsing(self):
+        """Test heuristic parsing of modern 'Antigravity App' and 'Antigravity IDE (Standalone)' markup."""
+        mock_html = """
+        <html>
+          <body>
+            <h2>Antigravity App</h2>
+            <a href="https://custom-cdn.google.com/hub/4.0.0-111111/linux-x64/Antigravity.tar.gz">Download for x64</a>
+            <a href="https://custom-cdn.google.com/hub/4.0.0-111111/linux-arm/Antigravity.tar.gz">Download for ARM64</a>
+            <h2>Antigravity IDE (Standalone)</h2>
+            <a href="https://custom-cdn.google.com/ide/4.1.0-222222/linux-x64/Antigravity%20IDE.tar.gz">Download for x64</a>
+            <a href="https://custom-cdn.google.com/ide/4.1.0-222222/linux-arm/Antigravity%20IDE.tar.gz">Download for ARM64</a>
+          </body>
+        </html>
+        """
+        parsed = detector.parse_releases_from_html(mock_html)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed["app"]["version"], "4.0.0")
+        self.assertEqual(parsed["ide"]["version"], "4.1.0")
+        self.assertIn("x86_64", parsed["app"]["urls"])
+        self.assertIn("aarch64", parsed["app"]["urls"])
         self.assertIn("x86_64", parsed["ide"]["urls"])
         self.assertIn("aarch64", parsed["ide"]["urls"])
 
@@ -69,10 +97,12 @@ class TestReleaseDetection(unittest.TestCase):
         self.assertIsNone(detector.parse_releases_from_html("<html><body>No links here</body></html>"))
 
     def test_verify_url_alive(self):
-        """Test URL health checker with a known active URL."""
+        """Test URL health checker with known active URLs."""
         releases, _ = detector.get_latest_releases(verify_live=False)
-        agent_url = releases["agent"]["urls"]["x86_64"]
-        self.assertTrue(detector.verify_url_alive(agent_url), f"URL failed live check: {agent_url}")
+        app_url = releases["app"]["urls"]["x86_64"]
+        self.assertTrue(detector.verify_url_alive(app_url), f"URL failed live check: {app_url}")
+        ide_url = releases["ide"]["urls"]["x86_64"]
+        self.assertTrue(detector.verify_url_alive(ide_url), f"URL failed live check: {ide_url}")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Antigravity 2.0 Fedora Uninstaller
+# Antigravity 2 Fedora Uninstaller
 # Safe, robust, and clean removal utility with interactive menu.
 
 set -euo pipefail
@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}${BOLD}=== Antigravity Uninstaller ===${NC}"
+echo -e "${BLUE}${BOLD}=== Antigravity 2 Uninstaller ===${NC}"
 
 # Default values
 REMOVE_IDE=false
@@ -25,8 +25,8 @@ show_help() {
 Usage: $(basename "$0") [options]
 
 Options:
-  --ide       Uninstall Antigravity IDE only.
-  --app       Uninstall Antigravity 2.0 only.
+  --ide       Uninstall Antigravity 2 IDE only.
+  --app       Uninstall Antigravity 2 only.
   --both      Uninstall both variants (complete cleanup).
   --user      Limit scope to user space (~/.local) without requiring root privileges.
   -h, --help  Show this help message.
@@ -73,8 +73,8 @@ if [[ "$REMOVE_IDE" == "false" && "$REMOVE_APP" == "false" ]]; then
     fi
 
     echo -e "\n${BOLD}Select what you want to uninstall:${NC}"
-    echo -e "  ${GREEN}1)${NC} Uninstall ${BOLD}Antigravity IDE${NC} only"
-    echo -e "  ${GREEN}2)${NC} Uninstall ${BOLD}Antigravity 2.0${NC} only"
+    echo -e "  ${GREEN}1)${NC} Uninstall ${BOLD}Antigravity 2 IDE${NC} only"
+    echo -e "  ${GREEN}2)${NC} Uninstall ${BOLD}Antigravity 2${NC} only"
     echo -e "  ${GREEN}3)${NC} Uninstall ${BOLD}Both${NC} (Complete Cleanup)"
     echo -ne "\nEnter an option [1-3]: "
 
@@ -122,7 +122,7 @@ safe_remove() {
 # 1. System-wide removal (Requires sudo if components exist, only executed if scope is not "user")
 if [ "$INSTALL_SCOPE" != "user" ]; then
     if [ "$REMOVE_APP" = "true" ]; then
-        echo -e "\n${BLUE}Checking for system-wide Antigravity 2.0 components...${NC}"
+        echo -e "\n${BLUE}Checking for system-wide Antigravity 2 components...${NC}"
         safe_remove "/opt/antigravity-Linux" "true"
         safe_remove "/opt/Antigravity-Linux" "true"
         safe_remove "/opt/Antigravity-x64" "true"
@@ -134,7 +134,7 @@ if [ "$INSTALL_SCOPE" != "user" ]; then
     fi
 
     if [ "$REMOVE_IDE" = "true" ]; then
-        echo -e "\n${BLUE}Checking for system-wide Antigravity IDE components...${NC}"
+        echo -e "\n${BLUE}Checking for system-wide Antigravity 2 IDE components...${NC}"
         safe_remove "/opt/antigravity-ide-Linux" "true"
         safe_remove "/usr/local/bin/antigravity-ide" "true"
         safe_remove "$SYSTEM_DESKTOP_DIR/antigravity-ide.desktop" "true"
@@ -150,7 +150,7 @@ fi
 
 # 2. User-local removal (No sudo required)
 if [ "$REMOVE_APP" = "true" ]; then
-    echo -e "\n${BLUE}Checking for user-local Antigravity 2.0 components...${NC}"
+    echo -e "\n${BLUE}Checking for user-local Antigravity 2 components...${NC}"
     safe_remove "$HOME/.local/share/antigravity-Linux" "false"
     safe_remove "$HOME/.local/share/Antigravity-Linux" "false"
     safe_remove "$HOME/.local/share/Antigravity-x64" "false"
@@ -161,7 +161,7 @@ if [ "$REMOVE_APP" = "true" ]; then
 fi
 
 if [ "$REMOVE_IDE" = "true" ]; then
-    echo -e "\n${BLUE}Checking for user-local Antigravity IDE components...${NC}"
+    echo -e "\n${BLUE}Checking for user-local Antigravity 2 IDE components...${NC}"
     safe_remove "$HOME/.local/share/antigravity-ide-Linux" "false"
     safe_remove "$HOME/.local/bin/antigravity-ide" "false"
     safe_remove "$USER_DESKTOP_DIR/antigravity-ide.desktop" "false"

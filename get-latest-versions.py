@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authoritative dynamic release detection for Google Antigravity (Agent & IDE).
+Authoritative dynamic release detection for Google Antigravity (App & IDE).
 Fetches metadata directly from https://antigravity.google/download using
 resilient pattern matching, heuristic fallback, and live URL verification.
 """
@@ -16,6 +16,7 @@ import urllib.error
 
 OFFICIAL_DOWNLOAD_PAGE = "https://antigravity.google/download"
 FALLBACK_PAGE = "https://antigravity.google"
+HUB_UPDATER_API = "https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/releases"
 
 
 def fetch_url_content(url, timeout=10):
@@ -24,7 +25,7 @@ def fetch_url_content(url, timeout=10):
         url,
         headers={
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,application/xml,application/json;q=0.9,*/*;q=0.8",
             "Accept-Encoding": "gzip, deflate",
         },
     )
@@ -70,7 +71,7 @@ def verify_url_alive(url, timeout=5):
 
 def parse_releases_from_html(html):
     """
-    Parse Antigravity Agent and IDE Linux tarball releases from HTML using
+    Parse Antigravity Agent/App and IDE Linux tarball releases from HTML using
     both strict canonical patterns and resilient semantic/heuristic patterns.
     """
     if not html:
@@ -79,16 +80,16 @@ def parse_releases_from_html(html):
     results = {}
 
     # --- Layer 1: Canonical Pattern Matching ---
-    # 1. Antigravity Agent (Hub)
+    # 1. Antigravity App (formerly Agent / Hub)
     hub_matches = re.findall(
         r'https://storage\.googleapis\.com/antigravity-public/antigravity-hub/([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)/linux-(x64|arm|arm64)/Antigravity\.tar\.gz',
         html,
     )
     for ver, build, arch in hub_matches:
         arch_key = "aarch64" if "arm" in arch else "x86_64"
-        if "agent" not in results:
-            results["agent"] = {"version": ver, "build": build, "urls": {}}
-        results["agent"]["urls"][arch_key] = (
+        if "app" not in results:
+            results["app"] = {"version": ver, "build": build, "urls": {}}
+        results["app"]["urls"][arch_key] = (
             f"https://storage.googleapis.com/antigravity-public/antigravity-hub/{ver}-{build}/linux-{arch}/Antigravity.tar.gz"
         )
 
@@ -106,9 +107,9 @@ def parse_releases_from_html(html):
         )
 
     # --- Layer 2: Resilient Heuristic Pattern Extractor ---
-    # If canonical patterns missed any component (e.g. Google changed CDN hostnames)
-    if "agent" not in results or "ide" not in results or len(results.get("agent", {}).get("urls", {})) < 2 or len(results.get("ide", {}).get("urls", {})) < 2:
-        all_tar_urls = re.findall(r'https?://[^\s"\'<>]+\.tar\.gz', html)
+    # If canonical patterns missed any component (e.g. Google changed CDN hostnames or markup)
+    if "app" not in results or "ide" not in results or len(results.get("app", {}).get("urls", {})) < 2 or len(results.get("ide", {}).get("urls", {})) < 2:
+        all_tar_urls = re.findall(r'''https?://[^\s"'<>]+\.tar\.gz''', html)
         for url in all_tar_urls:
             url_clean = url.replace(" ", "%20")
             url_lower = url.lower()
@@ -130,43 +131,86 @@ def parse_releases_from_html(html):
             ver = ver_match.group(1)
             build = ver_match.group(2) or ""
 
-            # Distinguish between IDE vs Agent (Hub)
+            # Distinguish between IDE vs App (Hub/Agent)
             is_ide = "ide" in url_lower
-            target_key = "ide" if is_ide else "agent"
+            target_key = "ide" if is_ide else "app"
 
             if target_key not in results:
                 results[target_key] = {"version": ver, "build": build, "urls": {}}
             if arch_key not in results[target_key]["urls"]:
                 results[target_key]["urls"][arch_key] = url_clean
 
+    # Maintain backward compatibility: ensure 'agent' is an alias of 'app'
+    if "app" in results:
+        results["agent"] = results["app"]
+    elif "agent" in results:
+        results["app"] = results["agent"]
+
     return results if results else None
 
 
 def get_latest_releases(verify_live=True):
     """
-    Fetch releases directly from the authoritative Google download page.
+    Fetch releases directly from authoritative Google sources:
+    1. Check auto-updater API for latest Antigravity App build.
+    2. Check official download page for App and IDE tarballs.
+    3. Fallback to main landing page if needed.
     """
-    # 1. Fetch official download page
-    html = fetch_url_content(OFFICIAL_DOWNLOAD_PAGE)
-    releases = parse_releases_from_html(html)
+    releases = {}
 
-    # 2. Fallback to main page if needed
-    if not releases or "agent" not in releases or "ide" not in releases:
+    # 1. Authoritative API check for latest App build
+    api_json = fetch_url_content(HUB_UPDATER_API)
+    if api_json:
+        try:
+            data = json.loads(api_json)
+            if isinstance(data, list) and len(data) > 0:
+                latest_app = data[0]
+                ver = latest_app.get("version")
+                build = latest_app.get("execution_id")
+                if ver and build:
+                    app_info = {
+                        "version": ver,
+                        "build": build,
+                        "urls": {
+                            "x86_64": f"https://storage.googleapis.com/antigravity-public/antigravity-hub/{ver}-{build}/linux-x64/Antigravity.tar.gz",
+                            "aarch64": f"https://storage.googleapis.com/antigravity-public/antigravity-hub/{ver}-{build}/linux-arm/Antigravity.tar.gz",
+                        },
+                    }
+                    releases["app"] = app_info
+                    releases["agent"] = app_info
+        except Exception:
+            pass
+
+    # 2. Fetch official download page
+    html = fetch_url_content(OFFICIAL_DOWNLOAD_PAGE)
+    html_releases = parse_releases_from_html(html)
+    if html_releases:
+        for k, v in html_releases.items():
+            if k not in releases:
+                releases[k] = v
+
+    # 3. Fallback to main page if needed
+    if not releases or "app" not in releases or "ide" not in releases:
         fallback_html = fetch_url_content(FALLBACK_PAGE)
         fb_releases = parse_releases_from_html(fallback_html)
         if fb_releases:
-            releases = releases or {}
             for k, v in fb_releases.items():
                 if k not in releases:
                     releases[k] = v
 
-    if not releases or "agent" not in releases or "ide" not in releases:
+    if not releases or ("app" not in releases and "agent" not in releases) or "ide" not in releases:
         sys.stderr.write("Error: Failed to parse latest releases from authoritative Google sources.\n")
         return None, "error"
 
-    # 3. Verify URLs live if requested
+    # Ensure symmetric aliasing
+    if "app" in releases and "agent" not in releases:
+        releases["agent"] = releases["app"]
+    elif "agent" in releases and "app" not in releases:
+        releases["app"] = releases["agent"]
+
+    # 4. Verify URLs live if requested
     if verify_live:
-        for comp in ("agent", "ide"):
+        for comp in ("app", "ide"):
             for arch, url in releases[comp]["urls"].items():
                 if not verify_url_alive(url):
                     sys.stderr.write(f"Warning: Discovered {comp} ({arch}) URL {url} failed live verification.\n")
@@ -179,9 +223,10 @@ def update_spec_files(releases, repo_dir):
     Automatically updates antigravity2.spec, antigravity2-ide.spec, and install.sh
     to match the latest detected versions.
     """
-    agent_ver = releases["agent"]["version"]
-    agent_x64 = releases["agent"]["urls"]["x86_64"]
-    agent_arm = releases["agent"]["urls"]["aarch64"]
+    app_data = releases.get("app", releases.get("agent", {}))
+    app_ver = app_data["version"]
+    app_x64 = app_data["urls"]["x86_64"]
+    app_arm = app_data["urls"]["aarch64"]
 
     ide_ver = releases["ide"]["version"]
     ide_x64 = releases["ide"]["urls"]["x86_64"]
@@ -195,9 +240,9 @@ def update_spec_files(releases, repo_dir):
         with open(agent_spec_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        content = re.sub(r"^Version:\s+.*$", f"Version:        {agent_ver}", content, flags=re.MULTILINE)
-        content = re.sub(r"^Source0:\s+.*Antigravity-x64\.tar\.gz$", f"Source0:        {agent_x64}#/Antigravity-x64.tar.gz", content, flags=re.MULTILINE)
-        content = re.sub(r"^Source1:\s+.*Antigravity-arm64\.tar\.gz$", f"Source1:        {agent_arm}#/Antigravity-arm64.tar.gz", content, flags=re.MULTILINE)
+        content = re.sub(r"^Version:\s+.*$", f"Version:        {app_ver}", content, flags=re.MULTILINE)
+        content = re.sub(r"^Source0:\s+.*Antigravity-x64\.tar\.gz$", f"Source0:        {app_x64}#/Antigravity-x64.tar.gz", content, flags=re.MULTILINE)
+        content = re.sub(r"^Source1:\s+.*Antigravity-arm64\.tar\.gz$", f"Source1:        {app_arm}#/Antigravity-arm64.tar.gz", content, flags=re.MULTILINE)
 
         with open(agent_spec_path, "w", encoding="utf-8") as f:
             f.write(content)
@@ -224,11 +269,14 @@ def update_spec_files(releases, repo_dir):
             content = f.read()
 
         content = re.sub(r'^VERSION_IDE="[^"]*"', f'VERSION_IDE="{ide_ver}"', content, flags=re.MULTILINE)
-        content = re.sub(r'^VERSION_AGENT="[^"]*"', f'VERSION_AGENT="{agent_ver}"', content, flags=re.MULTILINE)
+        content = re.sub(r'^VERSION_APP="[^"]*"', f'VERSION_APP="{app_ver}"', content, flags=re.MULTILINE)
+        content = re.sub(r'^VERSION_AGENT="[^"]*"', f'VERSION_AGENT="{app_ver}"', content, flags=re.MULTILINE)
         content = re.sub(r'^DOWNLOAD_URL_IDE_X64="[^"]*"', f'DOWNLOAD_URL_IDE_X64="{ide_x64}"', content, flags=re.MULTILINE)
         content = re.sub(r'^DOWNLOAD_URL_IDE_ARM64="[^"]*"', f'DOWNLOAD_URL_IDE_ARM64="{ide_arm}"', content, flags=re.MULTILINE)
-        content = re.sub(r'^DOWNLOAD_URL_AGENT_X64="[^"]*"', f'DOWNLOAD_URL_AGENT_X64="{agent_x64}"', content, flags=re.MULTILINE)
-        content = re.sub(r'^DOWNLOAD_URL_AGENT_ARM64="[^"]*"', f'DOWNLOAD_URL_AGENT_ARM64="{agent_arm}"', content, flags=re.MULTILINE)
+        content = re.sub(r'^DOWNLOAD_URL_APP_X64="[^"]*"', f'DOWNLOAD_URL_APP_X64="{app_x64}"', content, flags=re.MULTILINE)
+        content = re.sub(r'^DOWNLOAD_URL_APP_ARM64="[^"]*"', f'DOWNLOAD_URL_APP_ARM64="{app_arm}"', content, flags=re.MULTILINE)
+        content = re.sub(r'^DOWNLOAD_URL_AGENT_X64="[^"]*"', f'DOWNLOAD_URL_AGENT_X64="{app_x64}"', content, flags=re.MULTILINE)
+        content = re.sub(r'^DOWNLOAD_URL_AGENT_ARM64="[^"]*"', f'DOWNLOAD_URL_AGENT_ARM64="{app_arm}"', content, flags=re.MULTILINE)
 
         with open(install_sh_path, "w", encoding="utf-8") as f:
             f.write(content)
@@ -239,11 +287,11 @@ def update_spec_files(releases, repo_dir):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Authoritative release detector for Google Antigravity Agent & IDE."
+        description="Authoritative release detector for Google Antigravity App & IDE."
     )
     parser.add_argument("--json", action="store_true", help="Output metadata in JSON format")
     parser.add_argument("--env", action="store_true", help="Output metadata as eval-ready shell variables")
-    parser.add_argument("--mode", choices=["agent", "ide", "all"], default="all", help="Target component")
+    parser.add_argument("--mode", choices=["app", "agent", "ide", "all"], default="all", help="Target component")
     parser.add_argument("--arch", choices=["x86_64", "aarch64", "arm64", "all"], default="all", help="Target architecture")
     parser.add_argument("--update-specs", action="store_true", help="Update spec files and install.sh")
     parser.add_argument("--repo-dir", default=os.path.dirname(os.path.abspath(__file__)), help="Path to repository root")
@@ -257,7 +305,8 @@ def main():
 
     if args.update_specs:
         updated = update_spec_files(releases, args.repo_dir)
-        print(f"Successfully updated repository files to Agent v{releases['agent']['version']} / IDE v{releases['ide']['version']} from {source}:")
+        app_ver = releases.get("app", releases.get("agent", {})).get("version")
+        print(f"Successfully updated repository files to Antigravity App v{app_ver} / IDE v{releases['ide']['version']} from {source}:")
         for u in updated:
             print(f"  - {os.path.relpath(u, args.repo_dir)}")
         return
@@ -271,11 +320,17 @@ def main():
         return
 
     if args.env:
+        app_data = releases.get("app", releases.get("agent", {}))
         print(f'DETECTED_SOURCE="{source}"')
-        print(f'DETECTED_AGENT_VERSION="{releases["agent"]["version"]}"')
-        print(f'DETECTED_AGENT_BUILD="{releases["agent"]["build"]}"')
-        print(f'DETECTED_AGENT_URL_X64="{releases["agent"]["urls"].get("x86_64", "")}"')
-        print(f'DETECTED_AGENT_URL_ARM64="{releases["agent"]["urls"].get("aarch64", "")}"')
+        print(f'DETECTED_APP_VERSION="{app_data.get("version", "")}"')
+        print(f'DETECTED_APP_BUILD="{app_data.get("build", "")}"')
+        print(f'DETECTED_APP_URL_X64="{app_data.get("urls", {}).get("x86_64", "")}"')
+        print(f'DETECTED_APP_URL_ARM64="{app_data.get("urls", {}).get("aarch64", "")}"')
+        # Legacy aliases
+        print(f'DETECTED_AGENT_VERSION="{app_data.get("version", "")}"')
+        print(f'DETECTED_AGENT_BUILD="{app_data.get("build", "")}"')
+        print(f'DETECTED_AGENT_URL_X64="{app_data.get("urls", {}).get("x86_64", "")}"')
+        print(f'DETECTED_AGENT_URL_ARM64="{app_data.get("urls", {}).get("aarch64", "")}"')
         print(f'DETECTED_IDE_VERSION="{releases["ide"]["version"]}"')
         print(f'DETECTED_IDE_BUILD="{releases["ide"]["build"]}"')
         print(f'DETECTED_IDE_URL_X64="{releases["ide"]["urls"].get("x86_64", "")}"')
@@ -285,10 +340,10 @@ def main():
     # Default human-readable output
     print(f"Release Source: {source} (Authoritative: {OFFICIAL_DOWNLOAD_PAGE})")
     print("=" * 65)
-    for comp in ["agent", "ide"]:
-        if args.mode in ("all", comp):
+    for comp in ["app", "ide"]:
+        if args.mode in ("all", comp) or (args.mode == "agent" and comp == "app"):
             data = releases.get(comp, {})
-            name = "Antigravity Agent (Hub)" if comp == "agent" else "Antigravity IDE (Standalone)"
+            name = "Antigravity App" if comp == "app" else "Antigravity IDE (Standalone)"
             print(f"\n[{name}]")
             print(f"  Version: v{data.get('version')}")
             print(f"  Build:   {data.get('build')}")
