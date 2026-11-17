@@ -9,7 +9,7 @@
 
 
 Name:           antigravity2
-Version:        2.32.1
+Version:        2.32.2
 Release:        1%{?dist}
 Summary:        Antigravity 2 Desktop Application
 
@@ -17,8 +17,8 @@ License:        Proprietary (Google Terms of Service)
 URL:            https://storage.googleapis.com/antigravity-public/antigravity-hub/index.html
 ExclusiveArch:  x86_64 aarch64
 
-Source0:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.32.1-6001966350991360/linux-x64/Antigravity.tar.gz#/Antigravity-x64.tar.gz
-Source1:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.32.1-6001966350991360/linux-arm/Antigravity.tar.gz#/Antigravity-arm64.tar.gz
+Source0:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.32.2-4665802025205760/linux-x64/Antigravity.tar.gz#/Antigravity-x64.tar.gz
+Source1:        https://storage.googleapis.com/antigravity-public/antigravity-hub/2.32.2-4665802025205760/linux-arm/Antigravity.tar.gz#/Antigravity-arm64.tar.gz
 Source2:        antigravity2.desktop
 Source3:        antigravity.png
 
